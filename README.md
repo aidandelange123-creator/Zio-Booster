@@ -12,14 +12,13 @@ Zio-Booster is a modern FPS boosting application that enhances your gaming exper
 - **Real-time Monitoring**: Shows CPU, memory, and temperature statistics
 - **Manual Optimization**: One-click manual optimization when needed
 
-### New Enhanced Features
-- **Fast C++ Backend**: Enhanced performance with C++ implementation for critical system operations, providing faster and smoother optimization
-- **Game Profile Management**: Create and manage profiles for different games with custom optimization settings
-- **Gaming Mode**: Activate focused gaming mode that blocks notifications and disables power-saving features
-- **Advanced Performance Metrics**: Detailed FPS tracking, network latency monitoring, and historical performance statistics
-- **System Health Dashboard**: Comprehensive system health overview with performance trend analysis
-- **Network Optimization**: Real-time bandwidth prioritization for games and latency reduction techniques
-- **Christmas Event**: Special holiday-themed features and optimizations during Christmas season (December 1 - January 5)
+### Safety Features
+- **Input Validation Safety Feature (Rust)**: Validates all input parameters are within acceptable ranges
+- **Resource Limits Enforcement Safety Feature (Rust)**: Prevents resource exhaustion attacks
+- **Numeric Overflow Prevention Safety Feature (Rust)**: Protects against numeric overflow vulnerabilities
+- **Error Checking Safety Feature (C++)**: Adds comprehensive error checking for system calls
+- **Buffer Overflow Prevention Safety Feature (C++)**: Implements bounds checking for arrays and strings
+- **Process Validation Safety Feature (C++)**: Validates process IDs and protects critical system processes
 
 ## 📋 Requirements
 
