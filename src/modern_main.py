@@ -22,6 +22,7 @@ except ImportError:
 from utils.temperature_monitor import TemperatureMonitor
 from utils.optimizer import SystemOptimizer
 from utils.performance_metrics import PerformanceMetrics
+from ui.update_notification import UpdateNotificationGUI
 
 class ZioBoosterApp:
     def __init__(self):
@@ -34,6 +35,9 @@ class ZioBoosterApp:
         self.is_running = False
         self.monitoring_thread = None
         self.gaming_mode_active = False
+        
+        # Initialize update notification
+        self.update_notifier = UpdateNotificationGUI(self.root, current_version="1.0.0")
         
         if CUSTOM_TK_AVAILABLE:
             # Use modern UI
@@ -58,6 +62,9 @@ class ZioBoosterApp:
         
         # Update system info periodically
         self.update_system_info()
+        
+        # Check for updates after UI is initialized
+        self.root.after(3000, self.check_for_updates)  # Check for updates after 3 seconds
     
     def create_basic_ui(self):
         """Create basic UI when customtkinter is not available"""
@@ -340,6 +347,10 @@ class ZioBoosterApp:
                 f"{proc['temperature_score']:.1f}"
             ))
     
+    def check_for_updates(self):
+        """Check for updates using the update notifier"""
+        self.update_notifier.check_for_updates()
+
     def run(self):
         """Run the application"""
         self.root.mainloop()
