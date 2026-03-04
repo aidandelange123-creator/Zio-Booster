@@ -28,15 +28,38 @@ public:
     // Get system memory info in MB
     double get_system_memory_usage() {
         struct sysinfo memInfo;
-        sysinfo(&memInfo);
+        int result = sysinfo(&memInfo);
         
+        // Error checking safety feature
+        if (result != 0) {
+            return 0.0; // Return safe default on error
+        }
+        
+        // Overflow prevention safety feature
         long long totalMemory = memInfo.totalram;
+        if (totalMemory > LLONG_MAX / memInfo.mem_unit) {
+            return 0.0; // Prevent overflow
+        }
         totalMemory *= memInfo.mem_unit;
         
         long long freeMemory = memInfo.freeram;
+        if (freeMemory > LLONG_MAX / memInfo.mem_unit) {
+            return 0.0; // Prevent overflow
+        }
         freeMemory *= memInfo.mem_unit;
         
+        // Bounds checking safety feature
+        if (totalMemory < freeMemory || totalMemory <= 0) {
+            return 0.0; // Prevent invalid calculations
+        }
+        
         double usedMemory = (totalMemory - freeMemory) / (1024.0 * 1024.0); // Convert to MB
+        
+        // Result validation safety feature
+        if (usedMemory < 0 || usedMemory > 1000000) { // Reasonable upper limit
+            return 0.0;
+        }
+        
         return usedMemory;
     }
     
@@ -58,8 +81,26 @@ public:
         
         std::string line;
         if (std::getline(tempFile, line)) {
+            // Input validation safety feature
+            if (line.length() > 10) {  // Reasonable length limit for temperature data
+                return 0.0;
+            }
+            
             try {
-                double temp = std::stod(line) / 1000.0; // Convert from millidegrees to degrees
+                double temp = std::stod(line);
+                
+                // Range validation safety feature
+                if (temp < -50000 || temp > 150000) {  // Temperature in millidegrees
+                    return 0.0;
+                }
+                
+                temp = temp / 1000.0; // Convert from millidegrees to degrees
+                
+                // Final range validation safety feature
+                if (temp < -50.0 || temp > 150.0) {  // Reasonable temperature range in degrees
+                    return 0.0;
+                }
+                
                 return temp;
             } catch (...) {
                 return 0.0;
@@ -97,6 +138,17 @@ public:
     
     // Kill a specific process by PID
     bool kill_process(int pid) {
+        // Process ID validation safety feature
+        if (pid <= 0 || pid > 999999) {  // Reasonable upper limit for PIDs
+            return false;
+        }
+        
+        // Root process protection safety feature
+        if (pid == 1) {
+            return false;  // Never kill init process
+        }
+        
+        // Safe process termination with validation
         if (kill(pid, SIGTERM) == 0) {
             // Give process time to terminate gracefully
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -110,16 +162,36 @@ public:
     // Find processes by name
     std::vector<int> find_processes_by_name(const std::string& name) {
         std::vector<int> pids;
-        std::string command = "pgrep -f \"" + name + "\"";
+        
+        // Input validation safety feature
+        if (name.empty() || name.length() > 255) {
+            return pids;  // Return empty vector for invalid inputs
+        }
+        
+        // Sanitize input to prevent command injection
+        std::string sanitized_name = name;
+        size_t pos = 0;
+        while ((pos = sanitized_name.find("042", pos)) != std::string::npos) {
+            sanitized_name.replace(pos, 1, "042042042042");
+            pos += 2;
+        }
+        
+        std::string command = "pgrep -f 042" + sanitized_name + "042";
         
         FILE* pipe = popen(command.c_str(), "r");
         if (!pipe) return pids;
         
         char buffer[128];
         while (fgets(buffer, sizeof buffer, pipe) != nullptr) {
-            int pid = std::stoi(buffer);
-            if (pid > 0) {
-                pids.push_back(pid);
+            try {
+                int pid = std::stoi(buffer);
+                // Validate PID before adding to list
+                if (pid > 0 && pid <= 999999) {
+                    pids.push_back(pid);
+                }
+            } catch (...) {
+                // Skip invalid PIDs
+                continue;
             }
         }
         pclose(pipe);
@@ -163,6 +235,11 @@ public:
     std::vector<std::pair<int, double>> get_high_cpu_processes(int threshold_percent = 10) {
         std::vector<std::pair<int, double>> high_cpu_processes;
         
+        // Input validation safety feature
+        if (threshold_percent < 0 || threshold_percent > 100) {
+            threshold_percent = 10;  // Use default if invalid
+        }
+        
         // Get all process IDs
         std::string command = "ps -eo pid,pcpu --no-headers";
         FILE* pipe = popen(command.c_str(), "r");
@@ -170,15 +247,21 @@ public:
         if (!pipe) return high_cpu_processes;
         
         char buffer[256];
-        while (fgets(buffer, sizeof buffer, pipe) != nullptr) {
+        int count = 0;  // Limit processing to prevent infinite loops
+        
+        while (fgets(buffer, sizeof buffer, pipe) != nullptr && count < 10000) {
             int pid;
             double cpu_usage;
             
             if (sscanf(buffer, "%d %lf", &pid, &cpu_usage) == 2) {
-                if (cpu_usage >= threshold_percent && pid > 1) {
-                    high_cpu_processes.push_back(std::make_pair(pid, cpu_usage));
+                // Validate parsed values
+                if (pid > 1 && pid <= 999999 && cpu_usage >= 0.0 && cpu_usage <= 100.0) {
+                    if (cpu_usage >= threshold_percent) {
+                        high_cpu_processes.push_back(std::make_pair(pid, cpu_usage));
+                    }
                 }
             }
+            count++;
         }
         pclose(pipe);
         
