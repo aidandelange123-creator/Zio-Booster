@@ -10,7 +10,7 @@ from packaging import version
 import logging
 
 class AutoUpdater:
-    def __init__(self, repo_owner, repo_name, current_version, install_path=None):
+    def __init__(self, repo_owner="aidandelange123-creator", repo_name="Zio-Booster", current_version="1.0.0", install_path=None):
         self.repo_owner = repo_owner
         self.repo_name = repo_name
         self.current_version = current_version

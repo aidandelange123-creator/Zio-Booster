@@ -70,7 +70,7 @@ class UpdateManager:
         self.logger.info("Checking for updates...")
         
         updater = AutoUpdater(
-            repo_owner="aidandelange170-hub",
+            repo_owner="aidandelange123-creator",
             repo_name="Zio-Booster",
             current_version=self.config.get('current_version', '1.0.0'),
             install_path=os.getcwd()

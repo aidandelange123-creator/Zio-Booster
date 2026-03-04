@@ -9,6 +9,7 @@ import random
 import json
 import subprocess
 from datetime import datetime
+from ui.update_notification import UpdateNotificationGUI
 
 # Add the project root to the path so we can import utilities
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -21,6 +22,9 @@ class ZioBoosterApp:
         self.optimization_log = []
         self.system_profiles = {}
         self.current_profile = "default"
+        
+        # Initialize update notification
+        self.update_notifier = UpdateNotificationGUI(self.root, current_version="1.0.0")
         
         # Initialize UI (using basic tkinter for now to avoid dependency issues)
         self.root = tk.Tk()
@@ -141,6 +145,9 @@ class ZioBoosterApp:
         
         # Update system info periodically
         self.update_system_info()
+        
+        # Check for updates after UI is initialized
+        self.root.after(3000, self.check_for_updates)  # Check for updates after 3 seconds
     
     def start_boosting(self):
         """Start the FPS boosting process"""
@@ -404,6 +411,10 @@ class ZioBoosterApp:
                 messagebox.showinfo("Log Export", f"Optimization log exported to {filename}")
             except Exception as e:
                 messagebox.showerror("Log Export Error", f"Failed to export log: {e}")
+
+    def check_for_updates(self):
+        """Check for updates using the update notifier"""
+        self.update_notifier.check_for_updates()
 
     def run(self):
         """Run the application"""
