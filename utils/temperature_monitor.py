@@ -107,9 +107,31 @@ class TemperatureMonitor:
         return all_processes[:limit]
     
     def terminate_high_temperature_process(self, pid: int) -> bool:
-        """Terminate a process by PID"""
+        """Terminate a process by PID with strict validation"""
         try:
+            # Strict validation of PID
+            if not isinstance(pid, int) or pid <= 0:
+                raise ValueError(f"Invalid PID: {pid}. PID must be a positive integer.")
+            
+            # Additional check to ensure the PID is valid
+            if pid > 99999:  # Most systems have PID max around 32767, so this is conservative
+                raise ValueError(f"PID {pid} seems suspiciously high")
+            
             process = psutil.Process(pid)
+            
+            # Double check the process name is safe
+            process_name = process.name().lower()
+            critical_names = [
+                'systemd', 'kernel', 'kthreadd', 'init', 'explorer.exe', 'svchost.exe',
+                'wininit.exe', 'csrss.exe', 'lsass.exe', 'services.exe', 'dwm.exe',
+                'winlogon.exe', 'spoolsv.exe', 'taskhost.exe', 'smss.exe', 'csrss.exe'
+            ]
+            
+            for critical in critical_names:
+                if critical in process_name:
+                    raise PermissionError(f"Refusing to terminate critical system process: {process_name}")
+            
+            # Actually terminate the process
             process.terminate()
             process.wait(timeout=3)  # Wait up to 3 seconds for process to terminate
             return True
@@ -118,6 +140,12 @@ class TemperatureMonitor:
             return False
         except psutil.AccessDenied:
             print(f"Access denied terminating process with PID {pid}")
+            return False
+        except ValueError as ve:
+            print(f"Validation error terminating process with PID {pid}: {ve}")
+            return False
+        except PermissionError as pe:
+            print(f"Permission error terminating process with PID {pid}: {pe}")
             return False
         except Exception as e:
             print(f"Error terminating process with PID {pid}: {e}")

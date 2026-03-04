@@ -8,6 +8,7 @@ import tempfile
 import shutil
 from packaging import version
 import logging
+import re
 
 class AutoUpdater:
     def __init__(self, repo_owner="aidandelange123-creator", repo_name="Zio-Booster", current_version="1.0.0", install_path=None):
@@ -83,9 +84,17 @@ class AutoUpdater:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
                 
-                # Extract the zip file
+                # Extract the zip file with path validation
                 extract_dir = os.path.join(temp_dir, "extracted")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    # Validate paths to prevent zip slip vulnerability
+                    for member in zip_ref.namelist():
+                        # Remove leading '/' to prevent absolute paths
+                        member = member.lstrip('/')
+                        # Check for relative paths that go outside the extraction directory
+                        if '..' in member.split('/'):
+                            raise ValueError(f"Unsafe path detected in archive: {member}")
+                    
                     zip_ref.extractall(extract_dir)
                 
                 # Find the extracted folder (GitHub archives have a root folder with repo name)
