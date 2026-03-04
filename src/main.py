@@ -211,7 +211,10 @@ class ZioBoosterApp:
     def update_system_info(self):
         """Update system information labels"""
         try:
-            cpu_percent = psutil.cpu_percent(interval=1)
+            # Using psutil.cpu_percent(interval=1) already measures CPU usage over the interval
+            # We'll use a non-blocking approach by storing the first reading and using it next time
+            # Or use per_cpu=False for overall usage without waiting
+            cpu_percent = psutil.cpu_percent(interval=None)  # Non-blocking call for immediate reading
             memory_percent = psutil.virtual_memory().percent
             
             self.cpu_label.config(text=f"{cpu_percent}%")
@@ -243,12 +246,8 @@ class ZioBoosterApp:
 
     def update_process_list(self):
         """Update the list of processes, highlighting high-temperature ones"""
-        # Clear existing items
-        for item in self.process_tree.get_children():
-            self.process_tree.delete(item)
-        
         try:
-            # Get all processes with their resource usage
+            # Get all processes with their resource usage in a single iteration
             processes = []
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
                 try:
@@ -272,8 +271,11 @@ class ZioBoosterApp:
             # Sort by temperature score (resource usage)
             processes.sort(key=lambda x: float(x[4]), reverse=True)
             
-            # Add top processes to the treeview
-            for i, proc in enumerate(processes[:20]):  # Show top 20 processes
+            # Clear existing items and add top processes to the treeview
+            self.process_tree.delete(*self.process_tree.get_children())  # More efficient clearing
+            
+            # Batch insert for better performance
+            for proc in processes[:20]:  # Show top 20 processes
                 self.process_tree.insert("", "end", values=proc)
         except Exception as e:
             print(f"Error updating process list: {e}")
@@ -343,7 +345,7 @@ class ZioBoosterApp:
                         try:
                             p = psutil.Process(proc.info['pid'])
                             p.terminate()
-                            p.wait(timeout=5)  # Wait up to 5 seconds for process to terminate
+                            p.wait(timeout=2)  # Wait up to 5 seconds for process to terminate
                             
                             log_entry = {
                                 "timestamp": datetime.now().isoformat(),
