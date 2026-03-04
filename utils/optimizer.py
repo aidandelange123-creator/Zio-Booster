@@ -98,8 +98,11 @@ class SystemOptimizer:
                 
                 print(f"Terminating high-temperature process: {name} (PID: {pid}, Temp Score: {proc['temperature_score']})")
                 
-                if self.temp_monitor.terminate_high_temperature_process(pid):
-                    terminated_pids.append(pid)
+                try:
+                    if self.temp_monitor.terminate_high_temperature_process(pid):
+                        terminated_pids.append(pid)
+                except Exception as e:
+                    print(f"Failed to terminate process {pid}: {e}")
         
         return terminated_pids
     
@@ -140,8 +143,11 @@ class SystemOptimizer:
         terminated = []
         for proc in processes[:5]:  # Check top 5 memory consumers
             if not self._is_system_critical_process(proc['name']):
-                if self.temp_monitor.terminate_high_temperature_process(proc['pid']):
-                    terminated.append(proc['pid'])
+                try:
+                    if self.temp_monitor.terminate_high_temperature_process(proc['pid']):
+                        terminated.append(proc['pid'])
+                except Exception as e:
+                    print(f"Failed to terminate process {proc['pid']}: {e}")
         
         return terminated
     

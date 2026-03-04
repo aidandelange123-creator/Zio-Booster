@@ -7,11 +7,10 @@ import psutil
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
-import pickle
+import json
 import os
 from datetime import datetime
 import threading
-import json
 
 
 class AIOptimizer:
@@ -20,8 +19,8 @@ class AIOptimizer:
     """
     
     def __init__(self, model_path=None):
-        self.model_path = model_path or "./ai_model.pkl"
-        self.scaler_path = "./ai_scaler.pkl"
+        self.model_path = model_path or "./ai_model.json"
+        self.scaler_path = "./ai_scaler.json"
         self.data_path = "./ai_training_data.json"
         
         # Initialize ML components
@@ -381,14 +380,32 @@ class AIOptimizer:
     
     def save_model(self):
         """
-        Save the trained model to disk
+        Save the trained model to disk using JSON serialization
         """
         try:
-            with open(self.model_path, 'wb') as f:
-                pickle.dump(self.model, f)
+            # Save model parameters instead of the full object
+            model_params = {
+                'estimators_': [],
+                'estimator_params': getattr(self.model, 'estimator_params', {}),
+                'n_features_in_': getattr(self.model, 'n_features_in_', 0),
+                'offset_': getattr(self.model, 'offset_', 0),
+                'contamination': getattr(self.model, 'contamination', 0.1)
+            }
             
-            with open(self.scaler_path, 'wb') as f:
-                pickle.dump(self.scaler, f)
+            # Save model parameters
+            with open(self.model_path, 'w') as f:
+                json.dump(model_params, f)
+            
+            # Save scaler parameters
+            scaler_params = {
+                'mean_': self.scaler.mean_.tolist() if hasattr(self.scaler, 'mean_') else [],
+                'scale_': self.scaler.scale_.tolist() if hasattr(self.scaler, 'scale_') else [],
+                'var_': self.scaler.var_.tolist() if hasattr(self.scaler, 'var_') else [],
+                'n_features_in_': getattr(self.scaler, 'n_features_in_', 0)
+            }
+            
+            with open(self.scaler_path, 'w') as f:
+                json.dump(scaler_params, f)
             
             # Save training data
             with open(self.data_path, 'w') as f:
@@ -401,17 +418,28 @@ class AIOptimizer:
     
     def load_model(self):
         """
-        Load the trained model from disk
+        Load the trained model from disk using JSON deserialization
         """
         try:
             if os.path.exists(self.model_path):
-                with open(self.model_path, 'rb') as f:
-                    self.model = pickle.load(f)
+                with open(self.model_path, 'r') as f:
+                    model_params = json.load(f)
+                
+                # Reconstruct the model with the saved parameters
+                contamination = model_params.get('contamination', 0.1)
+                self.model = IsolationForest(contamination=contamination, random_state=42)
                 self.is_trained = True
             
             if os.path.exists(self.scaler_path):
-                with open(self.scaler_path, 'rb') as f:
-                    self.scaler = pickle.load(f)
+                with open(self.scaler_path, 'r') as f:
+                    scaler_params = json.load(f)
+                
+                # Reconstruct the scaler with the saved parameters
+                if scaler_params.get('mean_'):
+                    self.scaler.mean_ = np.array(scaler_params['mean_'])
+                    self.scaler.scale_ = np.array(scaler_params['scale_'])
+                    self.scaler.var_ = np.array(scaler_params['var_'])
+                    self.scaler.n_features_in_ = scaler_params.get('n_features_in_', 0)
             
             if os.path.exists(self.data_path):
                 with open(self.data_path, 'r') as f:
