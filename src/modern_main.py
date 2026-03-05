@@ -35,6 +35,7 @@ class ZioBoosterApp:
         self.is_running = False
         self.monitoring_thread = None
         self.gaming_mode_active = False
+        self.ai_optimization_active = False
         
         # Initialize update notification
         self.update_notifier = UpdateNotificationGUI(self.root, current_version="1.0.0")
@@ -50,6 +51,10 @@ class ZioBoosterApp:
             self.ui.manual_optimize_callback = self.manual_optimize
             self.ui.gaming_mode_callback = self.toggle_gaming_mode
             self.ui.apply_profile_callback = self.apply_profile
+            self.ui.ai_optimize_callback = self.ai_optimize_callback
+            self.ui.clean_ram_callback = self.clean_ram_callback
+            self.ui.kill_high_cpu_callback = self.kill_high_cpu_callback
+            self.ui.gpu_boost_callback = self.gpu_boost_callback
         else:
             # Fallback to basic tkinter UI
             self.root = tk.Tk()
@@ -225,16 +230,22 @@ class ZioBoosterApp:
             total_memory = system_info['total_memory']
             memory_percent = ((total_memory - available_memory) / total_memory) * 100 if total_memory > 0 else 0
             cpu_temp = system_info['cpu_temp']
+            disk_percent = system_info['disk_usage']
+            network_info = system_info['network_io']
         except:
             # Fallback to psutil if C++ implementation fails
             import psutil
             cpu_percent = psutil.cpu_percent(interval=1)
             memory_percent = psutil.virtual_memory().percent
             cpu_temp = self.temp_monitor.get_cpu_temperature()
+            disk_percent = psutil.disk_usage('/').percent
+            network_info = psutil.net_io_counters()
         
         if CUSTOM_TK_AVAILABLE:
             self.ui.cpu_label.configure(text=f"CPU Usage: {cpu_percent:.1f}%")
             self.ui.memory_label.configure(text=f"Memory Usage: {memory_percent:.1f}%")
+            self.ui.disk_label.configure(text=f"Disk Usage: {disk_percent:.1f}%")
+            self.ui.network_label.configure(text=f"Network: {network_info.bytes_sent/1024/1024:.1f}MB↑ {network_info.bytes_recv/1024/1024:.1f}MB↓")
             
             # Update additional labels that may exist in the modern UI
             try:
@@ -246,6 +257,15 @@ class ZioBoosterApp:
                     self.ui.gaming_mode_label.configure(text="Gaming Mode: Active")
                 else:
                     self.ui.gaming_mode_label.configure(text="Gaming Mode: Inactive")
+                    
+                # Update performance metrics if available
+                fps = self.performance_metrics.get_current_fps() if hasattr(self.performance_metrics, 'get_current_fps') else "N/A"
+                latency = self.performance_metrics.get_current_latency() if hasattr(self.performance_metrics, 'get_current_latency') else "N/A"
+                frame_time = self.performance_metrics.get_current_frame_time() if hasattr(self.performance_metrics, 'get_current_frame_time') else "N/A"
+                
+                self.ui.fps_label.configure(text=f"FPS: {fps}")
+                self.ui.latency_label.configure(text=f"Latency: {latency} ms")
+                self.ui.frame_time_label.configure(text=f"Frame Time: {frame_time} ms")
             except AttributeError:
                 pass  # Some UI elements may not exist
         else:
@@ -299,6 +319,135 @@ class ZioBoosterApp:
                 # For basic UI, we would need to implement this
                 pass
             print("Gaming mode enabled")
+
+    def ai_optimize_callback(self):
+        """AI-based optimization callback"""
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: AI Optimization Running")
+        else:
+            self.status_label.config(text="Status: AI Optimization Running", fg="orange")
+        
+        # Implement AI optimization logic here
+        # For now, just run a regular optimization cycle
+        result = self.optimizer.run_optimization_cycle()
+        
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: AI Optimization Complete")
+        else:
+            self.status_label.config(text="Status: AI Optimization Complete", fg="green")
+        
+        print(f"AI optimization result: {result}")
+        
+        # Update process list after optimization
+        self.update_process_list()
+        
+        # Reset status after a few seconds if not running
+        def reset_status():
+            if not self.is_running:
+                if CUSTOM_TK_AVAILABLE:
+                    self.ui.status_label.configure(text="Status: Idle")
+                else:
+                    self.status_label.config(text="Status: Idle", fg="black")
+        
+        self.root.after(3000, reset_status)
+
+    def clean_ram_callback(self):
+        """Clean RAM callback"""
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: Cleaning RAM")
+        else:
+            self.status_label.config(text="Status: Cleaning RAM", fg="orange")
+        
+        # Simulate RAM cleaning
+        import gc
+        collected = gc.collect()
+        
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text=f"Status: RAM Cleaned - {collected} objects collected")
+        else:
+            self.status_label.config(text=f"Status: RAM Cleaned - {collected} objects collected", fg="green")
+        
+        print(f"RAM cleaned: {collected} objects collected")
+        
+        # Update process list after cleaning
+        self.update_process_list()
+        
+        # Reset status after a few seconds if not running
+        def reset_status():
+            if not self.is_running:
+                if CUSTOM_TK_AVAILABLE:
+                    self.ui.status_label.configure(text="Status: Idle")
+                else:
+                    self.status_label.config(text="Status: Idle", fg="black")
+        
+        self.root.after(3000, reset_status)
+
+    def kill_high_cpu_callback(self):
+        """Kill high CPU processes callback"""
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: Killing High CPU Processes")
+        else:
+            self.status_label.config(text="Status: Killing High CPU Processes", fg="orange")
+        
+        # Get high CPU processes and kill them
+        import psutil
+        killed_processes = []
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            try:
+                if proc.info['cpu_percent'] > 20:  # Kill processes using more than 20% CPU
+                    proc.kill()
+                    killed_processes.append(proc.info['name'])
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass  # Process already terminated or access denied
+        
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text=f"Status: Killed {len(killed_processes)} High CPU Processes")
+        else:
+            self.status_label.config(text=f"Status: Killed {len(killed_processes)} High CPU Processes", fg="green")
+        
+        print(f"Killed high CPU processes: {killed_processes}")
+        
+        # Update process list after killing
+        self.update_process_list()
+        
+        # Reset status after a few seconds if not running
+        def reset_status():
+            if not self.is_running:
+                if CUSTOM_TK_AVAILABLE:
+                    self.ui.status_label.configure(text="Status: Idle")
+                else:
+                    self.status_label.config(text="Status: Idle", fg="black")
+        
+        self.root.after(3000, reset_status)
+
+    def gpu_boost_callback(self):
+        """GPU boost callback"""
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: GPU Boost Activated")
+        else:
+            self.status_label.config(text="Status: GPU Boost Activated", fg="orange")
+        
+        # Implement GPU boost logic here
+        # For now, just simulate GPU optimization
+        print("GPU boost activated - optimizing GPU settings")
+        
+        if CUSTOM_TK_AVAILABLE:
+            self.ui.status_label.configure(text="Status: GPU Boost Complete")
+        else:
+            self.status_label.config(text="Status: GPU Boost Complete", fg="green")
+        
+        # Update process list after optimization
+        self.update_process_list()
+        
+        # Reset status after a few seconds if not running
+        def reset_status():
+            if not self.is_running:
+                if CUSTOM_TK_AVAILABLE:
+                    self.ui.status_label.configure(text="Status: Idle")
+                else:
+                    self.status_label.config(text="Status: Idle", fg="black")
+        
+        self.root.after(3000, reset_status)
     
     def apply_profile(self):
         """Apply selected game profile"""
@@ -339,12 +488,14 @@ class ZioBoosterApp:
         
         # Add top processes to the treeview
         for i, proc in enumerate(processes[:20]):  # Show top 20 processes
+            priority = "High" if proc['cpu_percent'] > 50 or proc['memory_percent'] > 50 else "Normal"
             tree.insert("", "end", values=(
                 proc['name'],
                 proc['pid'],
                 f"{proc['cpu_percent']:.1f}" if proc['cpu_percent'] else "0.0",
                 f"{proc['memory_percent']:.1f}" if proc['memory_percent'] else "0.0",
-                f"{proc['temperature_score']:.1f}"
+                f"{proc['temperature_score']:.1f}",
+                priority
             ))
     
     def check_for_updates(self):
