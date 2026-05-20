@@ -1,0 +1,41 @@
+# Development files
+.git
+.gitignore
+*.log
+node_modules/
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Build artifacts
+*.tgz
+dist/
+build/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (keep essential docs)
+# *.md - we keep markdown files for documentation
+
+# Backup files
+*.bak
+*.backup
+
+# Python cache
+__pycache__/
+*.pyc
+.pyo
+
+# Exclude large binaries if not needed in npm package
+exe/ZioBooster

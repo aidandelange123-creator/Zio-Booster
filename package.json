@@ -1,0 +1,28 @@
+{
+  "name": "zio",
+  "version": "1.0.0",
+  "description": "Zio Booster - FPS Booster & System Optimizer. Auto-installs Git and launches Zio Booster.",
+  "main": "index.js",
+  "bin": {
+    "zio": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "postinstall": "node postinstall.js"
+  },
+  "keywords": [
+    "zio",
+    "booster",
+    "fps",
+    "gaming",
+    "optimizer",
+    "system",
+    "performance"
+  ],
+  "author": "Zio-Booster Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aidandelange123-oss/Zio-Booster.git"
+  }
+}

@@ -2,6 +2,21 @@
 
 Zio-Booster is a modern FPS boosting application that enhances your gaming experience by optimizing system resources and reducing temperatures in the background. It now includes a powerful **Video Browser API** with custom video player capabilities and branded watermarks.
 
+## 🎉 NEW: NPM Package Available!
+
+You can now install and run Zio Booster using npm! The NPM package automatically installs Git if it's not present on your system.
+
+```bash
+# Run without installing
+npx zio
+
+# Or install globally
+npm install -g zio
+zio
+```
+
+See [NPM_README.md](NPM_README.md) for full details.
+
 ## 🚀 Features
 
 ### Core Features
