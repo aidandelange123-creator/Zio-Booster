@@ -1,0 +1,7 @@
+{
+  "name": "fps-game",
+  "temperature_threshold": 75,
+  "cpu_threshold": 80,
+  "memory_threshold": 85,
+  "created": "2026-04-20T10:12:03.582152"
+}

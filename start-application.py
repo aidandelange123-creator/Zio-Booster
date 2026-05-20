@@ -96,6 +96,16 @@ def check_system_compatibility():
     print(f"System '{system}' is supported.")
     return True
 
+def check_display_available():
+    """
+    Check if a display is available for GUI applications
+    """
+    # Check DISPLAY environment variable on Linux/macOS
+    if platform.system() != 'Windows':
+        if not os.environ.get('DISPLAY'):
+            return False
+    return True
+
 def load_config():
     """
     Load application configuration
@@ -114,6 +124,55 @@ def load_config():
     else:
         print("Configuration file not found. Using defaults.")
         return {}
+
+def start_headless_mode():
+    """
+    Start the application in headless mode (no GUI) for servers or remote environments
+    """
+    print("\n" + "="*60)
+    print("Starting Zio-Booster in HEADLESS MODE (No GUI)")
+    print("="*60)
+    print("\nRunning system optimization in background...")
+    
+    try:
+        import psutil
+        
+        # Get system info
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        memory_percent = memory.percent
+        
+        print(f"\nSystem Status:")
+        print(f"  CPU Usage: {cpu_percent}%")
+        print(f"  Memory Usage: {memory_percent}%")
+        print(f"  Available Memory: {memory.available / (1024 * 1024):.2f} MB")
+        
+        # List top processes by CPU usage
+        print(f"\nTop 5 Processes by CPU Usage:")
+        processes = []
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            try:
+                cpu = proc.info['cpu_percent'] or 0
+                processes.append((proc.info['name'], proc.info['pid'], cpu))
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        
+        processes.sort(key=lambda x: x[2], reverse=True)
+        for i, (name, pid, cpu) in enumerate(processes[:5], 1):
+            print(f"  {i}. {name} (PID: {pid}) - CPU: {cpu:.1f}%")
+        
+        print("\n" + "="*60)
+        print("Zio-Booster Headless Mode Complete")
+        print("="*60)
+        print("\nTo use the full GUI application, please run this on a system with a display.")
+        print("Or use X11 forwarding (ssh -X) if connecting remotely.\n")
+        return True
+        
+    except Exception as e:
+        print(f"Error in headless mode: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def main():
     print("Zio-Booster FPS Booster - Starting Application")
@@ -149,6 +208,14 @@ def main():
         print(f"Warning: Some packages still missing after installation: {', '.join(missing_after_install)}")
         print("Attempting to continue with available packages...")
     
+    # Check if display is available
+    has_display = check_display_available()
+    
+    if not has_display:
+        print("\nNo display detected. Running in headless mode...")
+        start_headless_mode()
+        return
+    
     # Start the main application
     try:
         print("Starting Zio-Booster...")
@@ -169,10 +236,16 @@ def main():
             print("Please check your installation and dependencies.")
             return
     except Exception as e:
-        print(f"Unexpected error starting application: {e}")
-        import traceback
-        traceback.print_exc()
-        return
+        error_msg = str(e)
+        if "no display name" in error_msg.lower() or "$DISPLAY" in error_msg:
+            print(f"\nDisplay error detected: {e}")
+            print("Falling back to headless mode...\n")
+            start_headless_mode()
+        else:
+            print(f"Unexpected error starting application: {e}")
+            import traceback
+            traceback.print_exc()
+            return
 
 def create_basic_app():
     """

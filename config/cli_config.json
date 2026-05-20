@@ -1,0 +1,17 @@
+{
+  "temperature_threshold": 75,
+  "cpu_threshold": 80,
+  "memory_threshold": 85,
+  "auto_optimize": true,
+  "gaming_mode": false,
+  "protected_processes": [
+    "System",
+    "Idle",
+    "csrss.exe",
+    "wininit.exe"
+  ],
+  "optimization_interval": 5,
+  "log_level": "INFO",
+  "watermark_text": "Zio Booster",
+  "watermark_position": "bottom-right"
+}
